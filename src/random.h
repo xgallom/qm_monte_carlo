@@ -12,6 +12,7 @@ namespace Random
 	void init();
 
 	double get();
+	double norm();
 	double dist();
 	Vector3D vector();
 	Vector3D vectorOffset();

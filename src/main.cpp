@@ -91,7 +91,7 @@ int main()
 
 				const auto p = prob(rNew, a, b) / prob(r, a, b);
 
-				if(p >= Random::get())
+				if(p >= Random::norm())
 					r = rNew;
 
 				if(s > Config::Therm && (s - Config::Therm) % Config::ThermStep == 0) {
