@@ -1,52 +1,24 @@
 #include <fstream>
-#include "vector.h"
+#include <mutex>
+#include <thread>
 #include "random.h"
 #include "config.h"
 #include "matrix.h"
+#include "energyForParameters.h"
 
 namespace
 {
 	void init()
 	{
-		//std::cout << std::scientific;
 		Random::init();
 	}
 
-	double prob(const Vector<Vector3D> &r, double a, double b)
+	void threadHandler(double a, double b, size_t t, std::mutex &mutex, VectorD &energies)
 	{
-		const auto
-				r1 = abs(r[0]),
-				r2 = abs(r[1]);
+		const auto energy = energyForParameters(a, b);
 
-		return sqr(exp(-a * r1 - b * r2) + exp(-b * r1 - a * r2));
-	}
-
-	double energy(const Vector<Vector3D> &r, double a, double b)
-	{
-		const auto
-				ra = abs(r[1] - r[0]),
-				r1 = abs(r[0]),
-				r2 = abs(r[1]);
-
-		const auto V = 2. / r1 + 2. / r2 - 1. / ra;
-		const auto wave = exp(-a * r1 - b * r2) + exp(-b * r1 - a * r2);
-
-		return -0.5 * (sqr(a) + sqr(b)) +
-			   (
-					   (a * exp(-a * r1 - b * r2) + b * exp(-b * r1 - a * r2)) / r1 +
-					   (b * exp(-a * r1 - b * r2) + a * exp(-b * r1 - a * r2)) / r2
-			   ) / wave - V;
-	}
-
-	Vector<Vector3D> step(const Vector<Vector3D> &r)
-	{
-		Vector<Vector3D> result = {};
-		result.reserve(r.size());
-
-		for(const auto &rn : r)
-			result.push_back(rn + Random::vectorOffset() * Config::dR);
-
-		return result;
+		std::lock_guard<std::mutex> lock(mutex);
+		energies[t] = energy;
 	}
 }
 
@@ -63,58 +35,42 @@ int main()
 		A[n] = Config::Alpha1 + Config::dAlpha * c.col;
 	}
 
-	std::cout << A << "\n\n";
-	std::cout << B << "\n\n";
+	auto minEnergy = 0., minA = 0., minB = 0.;
 
-	double minEnergy = 0., minA = 0., minB = 0.;
+	VectorD energies(Config::ThreadCount);
+	std::mutex mutex;
 
-	for(size_t n = 0; n < A.size(); ++n) {
-		const auto
-				&a = A[n],
-				&b = B[n];
+	for(size_t n = 0; n < A.size(); n += Config::ThreadCount) {
+		std::cerr << "A: " << A[n] << " B: " << B[n] << "\n";
+		std::cerr.flush();
 
-		auto allEnergy = 0.;
+		Vector<std::thread> threads;
 
-		std::cout << "A: " << a << " B: " << b << "\n";
-		for(size_t w = 0; w < Config::WalkerCount; ++w) {
-			Vector<Vector3D> r = {Random::vector(), Random::vector()};
+		for(size_t t = 0; t < Config::ThreadCount; ++t)
+			threads.emplace_back(threadHandler, A[n + t], B[n + t], t, std::ref(mutex), std::ref(energies));
 
-			auto walkerEnergy = 0.;
+		for(auto &thread : threads)
+			thread.join();
 
-			for(size_t s = 0; s < Config::Steps; ++s) {
-				auto rNew = step(r);
+		for(size_t t = 0; t < Config::ThreadCount; ++t) {
+			const auto avgEnergy = energies[t];
 
-				const auto p = prob(rNew, a, b) / prob(r, a, b);
-
-				if(p >= Random::norm())
-					r = rNew;
-
-				if(s > Config::Therm && (s - Config::Therm) % Config::ThermStep == 0)
-					walkerEnergy += energy(r, a, b);
+			if(avgEnergy < minEnergy) {
+				minEnergy = avgEnergy;
+				minA = A[n + t];
+				minB = B[n + t];
 			}
 
-			allEnergy += walkerEnergy / Config::PointsCount;
+			E[n + t] = avgEnergy;
 		}
-
-		const auto avgEnergy = allEnergy / Config::WalkerCount;
-
-		std::cout << "Avg: " << avgEnergy << "\n";
-
-		if(avgEnergy < minEnergy) {
-			minEnergy = avgEnergy;
-			minA = a;
-			minB = b;
-		}
-
-		E[n] = avgEnergy;
 	}
 
 	std::ofstream f("out.txt");
-	for(int n = 0; n < A.size(); ++n)
+	for(size_t n = 0; n < A.size(); ++n)
 		f << A[n] << " " << B[n] << " " << E[n] << "\n";
 	f.close();
 
-	std::cout << "Minimums: " << minEnergy << " " << minA << " " << minB << "\n";
+	std::cerr << "\nMinimums: " << minEnergy << " " << minA << " " << minB << "\n";
 
 	return 0;
 }

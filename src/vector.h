@@ -14,6 +14,7 @@
 
 using std::transform;
 using std::accumulate;
+using std::swap;
 
 template<typename T>
 using Vector = std::vector<T>;
@@ -22,6 +23,8 @@ static constexpr size_t SpaceDimensions = 3;
 using Vector3D = std::array<double, SpaceDimensions>;
 
 using VectorD = Vector<double>;
+using VectorV3D = Vector<Vector3D>;
+using VectorIdx = Vector<size_t>;
 
 #include "vector_algorithms.h"
 #include "vector_output.h"

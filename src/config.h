@@ -8,15 +8,20 @@
 namespace Config
 {
 	constexpr size_t
-			WalkerCount = 150,
-			Steps = 60000,
-			ThermStep = 600,
-			Therm = 10000,
+			WalkerCount = 1,
+			Steps = 10000000,
+			SkipSteps = 500,
+			Therm = 100000,
+			TotalSteps = Steps + Therm,
 
 			TrialsAlpha = 10,
 			TrialsBeta = 12,
 
-			PointsCount = (Steps - Therm) / ThermStep;
+			PointsCount = Steps / SkipSteps,
+
+			EnergiesCount = PointsCount * WalkerCount,
+
+			ThreadCount = 1;
 
 	constexpr double
 			dR = 1.,

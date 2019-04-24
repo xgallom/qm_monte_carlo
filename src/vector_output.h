@@ -13,7 +13,7 @@ inline void outputOffset(std::ostream &os)
 {
 	auto offset = s_offset;
 	while(offset--)
-		std::cout << "  ";
+		os << "  ";
 }
 
 inline std::ostream &operator<<(std::ostream &os, const Vector3D &vector)
