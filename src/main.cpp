@@ -1,5 +1,4 @@
 #include <fstream>
-#include <mutex>
 #include "vector.h"
 #include "random.h"
 #include "config.h"
