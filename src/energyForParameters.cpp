@@ -6,6 +6,8 @@
 #include "random.h"
 #include "config.h"
 
+static size_t A = 0, B = 0;
+
 static inline void abs(VectorD &rs,
 					   const Vector3D *x)
 {
@@ -56,6 +58,7 @@ static inline double energy(const Vector3D *x1, const Vector3D *x2, const double
 							const double *r2, const double *wv1, const double *wv2,
 							const double a, const double b)
 {
+	++A;
 	const auto ra = abs(*x2 - *x1);
 	const auto V = 2. / *r1 + 2. / *r2 - 1. / ra;
 	const auto wv = *wv1 + *wv2;
@@ -73,30 +76,26 @@ static inline void energy(VectorD &es,
 						  const double *r2, const double *wv1, const double *wv2,
 						  const double a, const double b)
 {
-	for(auto &e : es)
+	for(auto &e : es) {
 		e = energy(x1++, x2++, r1++, r2++, wv1++, wv2++, a, b);
+	}
 }
-
-static size_t A = 0, B = 0;
 
 static inline void cmp(VectorIdx &updates,
 					   const double *p, const double *pn)
 {
 	updates.clear();
 	for(size_t n = 0; n < Config::WalkerCount; ++n) {
-		++B;
-		if(*pn++ / *p++ >= Random::norm()) {
+		if(*pn++ / *p++ >= Random::norm())
 			updates.push_back(n);
-			++A;
-		}
 	}
 }
 
 static inline void transfer(Vector3D *x1s, Vector3D *x2s, double *r1s,
-							double *r2s, double *wv1s, double *wv2s, double *ps, double *es,
+							double *r2s, double *wv1s, double *wv2s, double *ps,
 							const Vector3D *xn1s, const Vector3D *xn2s, const double *rn1s,
 							const double *rn2s, const double *wvn1s, const double *wvn2s, const double *pns,
-							const VectorIdx &updates, const double a, const double b)
+							const VectorIdx &updates)
 {
 	for(const auto idx : updates) {
 		x1s[idx] = xn1s[idx];
@@ -106,19 +105,20 @@ static inline void transfer(Vector3D *x1s, Vector3D *x2s, double *r1s,
 		wv1s[idx] = wvn1s[idx];
 		wv2s[idx] = wvn2s[idx];
 		ps[idx] = pns[idx];
-		es[idx] = energy(xn1s + idx, xn2s + idx, rn1s + idx, rn2s + idx, wvn1s + idx, wvn2s + idx, a, b);
 	}
 }
 
 static inline void add(VectorD &energies,
 					   const double *e)
 {
-	for(auto &energy : energies)
+	for(auto &energy : energies) {
+		++B;
 		energy += *e++;
+	}
 }
 
 static inline void run(VectorV3D &x1s, VectorV3D &x2s, VectorD &r1s, VectorD &r2s,
-					   VectorD &wv1s, VectorD &wv2s, VectorD &ps, VectorD &es,
+					   VectorD &wv1s, VectorD &wv2s, VectorD &ps,
 					   VectorV3D &xn1s, VectorV3D &xn2s, VectorD &rn1s, VectorD &rn2s,
 					   VectorD &wvn1s, VectorD &wvn2s, VectorD &pns,
 					   VectorIdx &updates, const double a, const double b)
@@ -128,9 +128,9 @@ static inline void run(VectorV3D &x1s, VectorV3D &x2s, VectorD &r1s, VectorD &r2
 	prob(pns, wvn1s.data(), wvn2s.data());
 
 	cmp(updates, ps.data(), pns.data());
-	transfer(x1s.data(), x2s.data(), r1s.data(), r2s.data(), wv1s.data(), wv2s.data(), ps.data(), es.data(),
+	transfer(x1s.data(), x2s.data(), r1s.data(), r2s.data(), wv1s.data(), wv2s.data(), ps.data(),
 			 xn1s.data(), xn2s.data(), rn1s.data(), rn2s.data(), wvn1s.data(), wvn2s.data(), pns.data(),
-			 updates, a, b);
+			 updates);
 }
 
 double energyForParameters(const double &a, const double &b)
@@ -153,7 +153,6 @@ double energyForParameters(const double &a, const double &b)
 
 	update(r1s, r2s, wv1s, wv2s, x1s.data(), x2s.data(), a, b);
 	prob(ps, wv1s.data(), wv2s.data());
-	energy(es, x1s.data(), x2s.data(), r1s.data(), r2s.data(), wv1s.data(), wv2s.data(), a, b);
 
 	VectorV3D
 			xn1s(Config::WalkerCount),
@@ -168,13 +167,14 @@ double energyForParameters(const double &a, const double &b)
 	VectorD energies(Config::WalkerCount);
 
 	for(size_t n = 0; n < Config::Therm; ++n)
-		run(x1s, x2s, r1s, r2s, wv1s, wv2s, ps, es, xn1s, xn2s, rn1s, rn2s, wvn1s, wvn2s, pns, updates, a, b);
+		run(x1s, x2s, r1s, r2s, wv1s, wv2s, ps, xn1s, xn2s, rn1s, rn2s, wvn1s, wvn2s, pns, updates, a, b);
 
 	for(size_t n = 0; n < Config::PointsCount; ++n) {
+		energy(es, x1s.data(), x2s.data(), r1s.data(), r2s.data(), wv1s.data(), wv2s.data(), a, b);
 		add(energies, es.data());
 
 		for(size_t s = 0; s < Config::SkipSteps; ++s)
-			run(x1s, x2s, r1s, r2s, wv1s, wv2s, ps, es, xn1s, xn2s, rn1s, rn2s, wvn1s, wvn2s, pns, updates, a, b);
+			run(x1s, x2s, r1s, r2s, wv1s, wv2s, ps, xn1s, xn2s, rn1s, rn2s, wvn1s, wvn2s, pns, updates, a, b);
 	}
 
 	std::cout << A << " " << B << "\n";

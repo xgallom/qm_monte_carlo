@@ -21,7 +21,7 @@ namespace Config
 
 			EnergiesCount = PointsCount * WalkerCount,
 
-			ThreadCount = 1;
+			ThreadCount = 4;
 
 	constexpr double
 			dR = 1.,
