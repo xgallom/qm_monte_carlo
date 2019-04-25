@@ -8,9 +8,9 @@
 namespace Config
 {
 	constexpr size_t
-			WalkerCount = 150,
-			Steps = 60000,
-			ThermStep = 600,
+			WalkerCount = 256,
+			Steps = 110000,
+			ThermStep = 500,
 			Therm = 10000,
 
 			TrialsAlpha = 10,
