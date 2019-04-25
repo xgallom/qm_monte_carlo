@@ -63,6 +63,8 @@ int main()
 				minB = B[n + t];
 			}
 
+			std::cout << avgEnergy << "\n";
+
 			E[n + t] = avgEnergy;
 		}
 	}
