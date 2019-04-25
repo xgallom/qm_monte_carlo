@@ -5,11 +5,13 @@
 #ifndef QM_MONTE_CARLO_CONFIG_H
 #define QM_MONTE_CARLO_CONFIG_H
 
+#include <cstddef>
+
 namespace Config
 {
 	constexpr size_t
-			WalkerCount = 1,
-			Steps = 10000000,
+			WalkerCount = 50,
+			Steps = 50000,
 			SkipSteps = 500,
 			Therm = 100000,
 			TotalSteps = Steps + Therm,

@@ -1,6 +1,8 @@
 #include <fstream>
+#include <iostream>
 #include <mutex>
 #include <thread>
+#include <vector>
 #include "random.h"
 #include "config.h"
 #include "matrix.h"
@@ -13,7 +15,7 @@ namespace
 		Random::init();
 	}
 
-	void threadHandler(double a, double b, size_t t, std::mutex &mutex, VectorD &energies)
+	void threadHandler(double a, double b, size_t t, std::mutex &mutex, double *energies)
 	{
 		const auto energy = energyForParameters(a, b);
 
@@ -37,17 +39,17 @@ int main()
 
 	auto minEnergy = 0., minA = 0., minB = 0.;
 
-	VectorD energies(Config::ThreadCount);
+	double energies[Config::ThreadCount] = {};
 	std::mutex mutex;
 
 	for(size_t n = 0; n < A.size(); n += Config::ThreadCount) {
 		std::cerr << "A: " << A[n] << " B: " << B[n] << "\n";
 		std::cerr.flush();
 
-		Vector<std::thread> threads;
+		std::vector<std::thread> threads;
 
 		for(size_t t = 0; t < Config::ThreadCount; ++t)
-			threads.emplace_back(threadHandler, A[n + t], B[n + t], t, std::ref(mutex), std::ref(energies));
+			threads.emplace_back(threadHandler, A[n + t], B[n + t], t, std::ref(mutex), energies);
 
 		for(auto &thread : threads)
 			thread.join();

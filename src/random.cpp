@@ -46,10 +46,4 @@ namespace Random
 
 	double dist()
 	{ return Config::Dist * get(); }
-
-	Vector3D vector()
-	{ return {dist(), dist(), dist()}; }
-
-	Vector3D vectorOffset()
-	{ return {get(), get(), get()}; }
 }

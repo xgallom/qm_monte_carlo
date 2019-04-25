@@ -5,8 +5,6 @@
 #ifndef QM_MONTE_CARLO_RANDOM_H
 #define QM_MONTE_CARLO_RANDOM_H
 
-#include "vector.h"
-
 namespace Random
 {
 	void init();
@@ -14,8 +12,6 @@ namespace Random
 	double get();
 	double norm();
 	double dist();
-	Vector3D vector();
-	Vector3D vectorOffset();
 }
 
 #endif //QM_MONTE_CARLO_RANDOM_H
