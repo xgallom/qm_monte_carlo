@@ -1,4 +1,3 @@
-#include "random.h"
 #include "config.h"
 #include "energyForParameters.h"
 
@@ -14,10 +13,9 @@ namespace
 {
 	void init()
 	{
-		Random::init();
 	}
 
-	void prepare(double *a, double *b)
+	void prepare(float *a, float *b)
 	{
 		for(size_t n = 0; n < Config::Trials; ++n) {
 			*b++ = Config::Beta1 + Config::dBeta * (n / Config::TrialsAlpha);
@@ -25,13 +23,15 @@ namespace
 		}
 	}
 
-	void threadHandler(const double *a, const double *b, double *e, size_t t,
+	void threadHandler(const float *a, const float *b, float *e, size_t t,
 					   std::mutex &mutex, size_t &progress)
 	{
-		double
+		float
 				aBuffer[Config::TasksPerThread],
 				bBuffer[Config::TasksPerThread],
 				eBuffer[Config::TasksPerThread];
+
+		Random random;
 
 		mutex.lock();
 		for(size_t n = 0; n < t; ++n) {
@@ -45,7 +45,7 @@ namespace
 		auto *eB = eBuffer;
 		const auto *aB = aBuffer, *bB = bBuffer;
 		while(t--)
-			*eB++ = energyForParameters(*aB++, *bB++);
+			*eB++ = energyForParameters(*aB++, *bB++, random);
 
 		mutex.lock();
 		std::cout << "Finishing thread-local simulation\n";
@@ -56,14 +56,16 @@ namespace
 		mutex.unlock();
 	}
 
-	void runSingle(const double *a, const double *b, double *e, size_t t)
+	void runSingle(const float *a, const float *b, float *e, size_t t)
 	{
+		Random random;
+
 		while(t--)
-			*e++ = energyForParameters(*a++, *b++);
+			*e++ = energyForParameters(*a++, *b++, random);
 	}
 
 	void spawnThreads(std::vector<std::thread> &threads,
-					  const double *a, const double *b, double *e,
+					  const float *a, const float *b, float *e,
 					  std::mutex &mutex, size_t &progress)
 	{
 		std::cout
@@ -115,7 +117,7 @@ namespace
 			thread.join();
 	}
 
-	size_t outputData(const double *A, const double *B, const double *E)
+	size_t outputData(const float *A, const float *B, const float *E)
 	{
 		size_t min = 0;
 
@@ -134,20 +136,20 @@ namespace
 
 int main()
 {
-	double A[Config::Trials], B[Config::Trials], E[Config::Trials];
+	float A[Config::Trials], B[Config::Trials], E[Config::Trials];
 
 	init();
 	prepare(A, B);
 
-	//std::vector<std::thread> threads;
-	//std::mutex mutex;
-	//size_t progress = Config::Trials;
+	std::vector<std::thread> threads;
+	std::mutex mutex;
+	size_t progress = Config::Trials;
 
-	runSingle(A, B, E, Config::Trials);
-	//spawnThreads(threads, A, B, E, mutex, progress);
+	//runSingle(A, B, E, Config::Trials);
+	spawnThreads(threads, A, B, E, mutex, progress);
 
 	//waitForFinish(mutex, progress);
-	//join(threads);
+	join(threads);
 
 	size_t min = outputData(A, B, E);
 

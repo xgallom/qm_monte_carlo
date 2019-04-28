@@ -10,7 +10,7 @@
 namespace Config
 {
 	constexpr size_t
-			WalkerCount = 256,
+			WalkerCount = 0x100,
 			Steps = 100000,
 			SkipSteps = 500,
 			Therm = 10000,
@@ -27,7 +27,7 @@ namespace Config
 			ThreadCount = 8,
 			TasksPerThread = Trials / ThreadCount;
 
-	constexpr double
+	constexpr float
 			dR = 1.,
 			Alpha1 = 0.9,
 			dAlpha = 0.05,

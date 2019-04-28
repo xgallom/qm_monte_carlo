@@ -5,6 +5,8 @@
 #ifndef QM_MONTE_CARLO_ENERGYFORPARAMETERS_H
 #define QM_MONTE_CARLO_ENERGYFORPARAMETERS_H
 
-double energyForParameters(double a, double b);
+#include "random.h"
+
+float energyForParameters(float a, float b, Random &random);
 
 #endif //QM_MONTE_CARLO_ENERGYFORPARAMETERS_H

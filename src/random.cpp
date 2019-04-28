@@ -4,46 +4,17 @@
 
 #include "random.h"
 #include "config.h"
-#include <random>
-#include <memory>
 
-namespace Random
-{
-	namespace
-	{
-		struct Context {
-			Context(std::mt19937 &&a_engine,
-					std::uniform_real_distribution<double> &&a_dist,
-					std::uniform_real_distribution<double> &&a_norm) :
-					engine(a_engine),
-					dist(a_dist),
-					norm(a_norm)
-			{}
+Random::Random() :
+		m_device(),
+		m_engine(m_device())
+{}
 
-			std::mt19937 engine;
-			std::uniform_real_distribution<double> dist;
-			std::uniform_real_distribution<double> norm;
-		};
+float Random::get()
+{ return m_dist(m_engine); }
 
-		std::unique_ptr<Context> s_context;
-	}
+float Random::norm()
+{ return m_norm(m_engine); }
 
-	void init()
-	{
-		std::random_device device;
-
-		s_context = std::make_unique<Context>(std::mt19937(device()),
-											  std::uniform_real_distribution<double>(-1., 1.),
-											  std::uniform_real_distribution<double>()
-		);
-	}
-
-	double get()
-	{ return s_context->dist(s_context->engine); }
-
-	double norm()
-	{ return s_context->norm(s_context->engine); }
-
-	double dist()
-	{ return Config::Dist * get(); }
-}
+float Random::dist()
+{ return Config::Dist * get(); }

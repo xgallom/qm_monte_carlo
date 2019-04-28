@@ -3,51 +3,50 @@
 //
 
 #include "energyForParameters.h"
-#include "random.h"
 #include "config.h"
 #include "context.h"
-#include <cmath>
-#include <iostream>
 
-static double sqr(const double x)
+#include <cmath>
+
+static float sqr(const float x)
 { return x * x; }
 
-static void generate(double *to, size_t n)
+static void generate(float *to, size_t n, Random &random)
 {
 	while(n--)
-		*to++ = Random::dist();
+		*to++ = random.dist();
 }
 
-static void generate(Context &c)
+static void generate(Context &c, Random &random)
 {
-	generate(c.x1.x, WArrayD::Count());
-	generate(c.x1.y, WArrayD::Count());
-	generate(c.x1.z, WArrayD::Count());
-	generate(c.x2.x, WArrayD::Count());
-	generate(c.x2.y, WArrayD::Count());
-	generate(c.x2.z, WArrayD::Count());
+	generate(c.x1.x, WArrayD::Count(), random);
+	generate(c.x1.y, WArrayD::Count(), random);
+	generate(c.x1.z, WArrayD::Count(), random);
+	generate(c.x2.x, WArrayD::Count(), random);
+	generate(c.x2.y, WArrayD::Count(), random);
+	generate(c.x2.z, WArrayD::Count(), random);
 }
 
-static void step(double *to, const double *from, size_t n)
+static void step(float *to, const float *from, size_t n, Random &random)
 {
 	while(n--)
-		*to++ = *from++ + Random::get() * Config::dR;
+		*to++ = *from++ + random.get() * Config::dR;
 }
 
-static void step(Context &cn, const Context &c)
+static void step(Context &cn, const Context &c, Random &random)
 {
-	step(cn.x1.x, c.x1.x, WArrayD::Count());
-	step(cn.x1.y, c.x1.y, WArrayD::Count());
-	step(cn.x1.z, c.x1.z, WArrayD::Count());
-	step(cn.x2.x, c.x2.x, WArrayD::Count());
-	step(cn.x2.y, c.x2.y, WArrayD::Count());
-	step(cn.x2.z, c.x2.z, WArrayD::Count());
+	step(cn.x1.x, c.x1.x, WArrayD::Count(), random);
+	step(cn.x1.y, c.x1.y, WArrayD::Count(), random);
+	step(cn.x1.z, c.x1.z, WArrayD::Count(), random);
+	step(cn.x2.x, c.x2.x, WArrayD::Count(), random);
+	step(cn.x2.y, c.x2.y, WArrayD::Count(), random);
+	step(cn.x2.z, c.x2.z, WArrayD::Count(), random);
 }
 
-static double abs(const double x, const double y, const double z)
-{ return sqrt(sqr(x) + sqr(y) + sqr(z)); }
+static float abs(const float x, const float y, const float z)
+{ return sqrtf(sqr(x) + sqr(y) + sqr(z)); }
 
-static void abs(double *to, CD3 from, size_t n)
+static void abs(float *to, CD3 from, size_t n)
 {
 	while(n--) {
 		const auto
@@ -59,7 +58,7 @@ static void abs(double *to, CD3 from, size_t n)
 	}
 }
 
-static void abs(double *to, CD3 fromr, CD3 froml, size_t n)
+static void abs(float *to, CD3 fromr, CD3 froml, size_t n)
 {
 	while(n--) {
 		const auto
@@ -71,13 +70,13 @@ static void abs(double *to, CD3 fromr, CD3 froml, size_t n)
 	}
 }
 
-static void wave(double *to, const double *r1, const double *r2, size_t n, const double a, const double b)
+static void wave(float *to, const float *r1, const float *r2, size_t n, const float a, const float b)
 {
 	while(n--)
 		*to++ = std::exp(-a * *r1++ - b * *r2++);
 }
 
-static void update(Context &c, const double a, const double b)
+static void update(Context &c, const float a, const float b)
 {
 	abs(c.r1, c.x1, WArrayD::Count());
 	abs(c.r2, c.x2, WArrayD::Count());
@@ -85,19 +84,19 @@ static void update(Context &c, const double a, const double b)
 	wave(c.wv2, c.r1, c.r2, WArrayD::Count(), b, a);
 }
 
-static void prob(double *to, const double *wv1, const double *wv2, size_t n)
+static void prob(float *to, const float *wv1, const float *wv2, size_t n)
 {
 	while(n--)
 		*to++ = sqr(*wv1++ + *wv2++);
 }
 
-static int *cmp(int *updates, const double *p, const double *pn, size_t n)
+static int *cmp(int *updates, const float *p, const float *pn, size_t n, Random &random)
 {
 	int i = 0;
 	while(n--) {
 		const auto result = *pn++ / *p++;
 
-		if(result >= Random::norm())
+		if(result >= random.norm())
 			*updates++ = i;
 		++i;
 	}
@@ -123,25 +122,25 @@ static void transfer(Context &to, const Context &from, int *updates, size_t n)
 	}
 }
 
-static void run(Context &c, Context &cn, size_t n, const double a, const double b)
+static void run(Context &c, Context &cn, size_t n, const float a, const float b, Random &random)
 {
 	while(n--) {
-		step(cn, c);
+		step(cn, c, random);
 		update(cn, a, b);
 
 		prob(cn.prob, cn.wv1, cn.wv2, WArrayD::Count());
 
 		int updates[Config::WalkerCount];
-		const auto size = static_cast<size_t>(cmp(updates, c.prob, cn.prob, WArrayD::Count()) - updates);
+		const auto size = static_cast<size_t>(cmp(updates, c.prob, cn.prob, WArrayD::Count(), random) - updates);
 
 		transfer(c, cn, updates, size);
 	}
 }
 
-static void addEnergy(double *energy, const Context &context, const double a, const double b)
+static void addEnergy(float *energy, const Context &context, const float a, const float b)
 {
 	WArrayD rar;
-	double *ra = rar.data;
+	float *ra = rar.data;
 	abs(ra, context.x2, context.x1, WArrayD::Count());
 
 	const auto
@@ -150,12 +149,12 @@ static void addEnergy(double *energy, const Context &context, const double a, co
 			*wv1 = context.wv1,
 			*wv2 = context.wv2;
 
-	const auto e1 = -0.5 * (sqr(a) + sqr(b));
+	const auto e1 = -0.5f * (sqr(a) + sqr(b));
 
 	size_t n = WArrayD::Count();
 	while(n--) {
 		const auto
-				V = 2. / *r1 + 2. / *r2 - 1. / *ra,
+				V = 2.f / *r1 + 2.f / *r2 - 1.f / *ra,
 				wv = *wv1 + *wv2,
 				e2 = (
 							 (a * *wv1 + b * *wv2) / *r1 +
@@ -173,16 +172,16 @@ static void addEnergy(double *energy, const Context &context, const double a, co
 	}
 }
 
-static double accumulate(const double *energy, size_t n)
+static float accumulate(const float *energy, size_t n)
 {
-	double sum = 0.;
+	float sum = 0.;
 	while(n--)
 		sum += *energy++;
 
 	return sum;
 }
 
-double energyForParameters(const double a, const double b)
+float energyForParameters(const float a, const float b, Random &random)
 {
 	WArrayD
 			x1x, x1y, x1z,
@@ -221,18 +220,18 @@ double energyForParameters(const double a, const double b)
 	for(auto &e : energy.data)
 		e = 0;
 
-	generate(context);
+	generate(context, random);
 	update(context, a, b);
 	prob(context.prob, context.wv1, context.wv2, WArrayD::Count());
 
 	// Thermalize
-	run(context, newContext, Config::Therm, a, b);
+	run(context, newContext, Config::Therm, a, b, random);
 
 	// Simulate
 	for(size_t n = 0; n < Config::PointsCount; ++n) {
 		addEnergy(energy.data, context, a, b);
 
-		run(context, newContext, Config::SkipSteps, a, b);
+		run(context, newContext, Config::SkipSteps, a, b, random);
 	}
 
 	// Average
