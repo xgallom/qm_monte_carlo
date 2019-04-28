@@ -42,7 +42,7 @@ int main()
 	double energies[Config::ThreadCount] = {};
 	std::mutex mutex;
 
-	for(size_t n = 0; n < A.size(); n += Config::ThreadCount) {
+	for(size_t n = 0; n < 1; n += Config::ThreadCount) {
 		std::cerr << "A: " << A[n] << " B: " << B[n] << "\n";
 		std::cerr.flush();
 
@@ -63,11 +63,12 @@ int main()
 				minB = B[n + t];
 			}
 
-			std::cout << avgEnergy << "\n";
+			std::cerr << avgEnergy << "\n";
 
 			E[n + t] = avgEnergy;
 		}
 	}
+	return 0;
 
 	std::ofstream f("out.txt");
 	for(size_t n = 0; n < A.size(); ++n)

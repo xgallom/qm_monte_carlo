@@ -6,23 +6,16 @@
 #include "random.h"
 #include "config.h"
 #include "context.h"
-#include <memory>
-#include <iostream>
 #include <cmath>
-#include <numeric>
+#include <iostream>
 
-static size_t Out1 = 0, Out2 = 0;
-
-template<typename T>
-using owner = std::unique_ptr<T>;
-
-void generate(double *to, size_t n)
+static void generate(double *to, size_t n)
 {
 	while(n--)
 		*to++ = Random::dist();
 }
 
-void generate(Context &c)
+static void generate(Context &c)
 {
 	generate(c.x1.x, WArrayD::Count());
 	generate(c.x1.y, WArrayD::Count());
@@ -32,23 +25,27 @@ void generate(Context &c)
 	generate(c.x2.z, WArrayD::Count());
 }
 
-void step(double *to, double *from, size_t n)
+static void step(Mmd *to, const Mmd *from, size_t n)
 {
 	while(n--)
-		*to++ = *from++ + Random::get() * Config::dR;
+		*to++ =
+				_mm_add_pd(
+						*from++,
+						Mmd{Random::get() * Config::dR, Random::get() * Config::dR}
+				);
 }
 
-void step(Context &cn, const Context &c)
+static void step(Context &cn, const Context &c)
 {
-	step(cn.x1.x, c.x1.x, WArrayD::Count());
-	step(cn.x1.y, c.x1.y, WArrayD::Count());
-	step(cn.x1.z, c.x1.z, WArrayD::Count());
-	step(cn.x2.x, c.x2.x, WArrayD::Count());
-	step(cn.x2.y, c.x2.y, WArrayD::Count());
-	step(cn.x2.z, c.x2.z, WArrayD::Count());
+	step(mmd(cn.x1.x), mmd(c.x1.x), WArrayD::Batches());
+	step(mmd(cn.x1.y), mmd(c.x1.y), WArrayD::Batches());
+	step(mmd(cn.x1.z), mmd(c.x1.z), WArrayD::Batches());
+	step(mmd(cn.x2.x), mmd(c.x2.x), WArrayD::Batches());
+	step(mmd(cn.x2.y), mmd(c.x2.y), WArrayD::Batches());
+	step(mmd(cn.x2.z), mmd(c.x2.z), WArrayD::Batches());
 }
 
-void abs(Mmd *to, CMmd3 from, size_t n)
+static void abs(Mmd *to, CMmd3 from, size_t n)
 {
 	while(n--) {
 		const auto
@@ -68,13 +65,13 @@ void abs(Mmd *to, CMmd3 from, size_t n)
 	}
 }
 
-void abs(Mmd *to, CMmd3 fromr, CMmd3 froml, size_t n)
+static void abs(Mmd *to, CMmd3 fromr, CMmd3 froml, size_t n)
 {
 	while(n--) {
 		const auto
-				x = *fromr.x++ - *froml.x++,
-				y = *fromr.y++ - *froml.y++,
-				z = *fromr.z++ - *froml.z++;
+				x = _mm_sub_pd(*fromr.x++, *froml.x++),
+				y = _mm_sub_pd(*fromr.y++, *froml.y++),
+				z = _mm_sub_pd(*fromr.z++, *froml.z++);
 
 		*to++ =
 				_mm_sqrt_pd(
@@ -88,25 +85,30 @@ void abs(Mmd *to, CMmd3 fromr, CMmd3 froml, size_t n)
 	}
 }
 
-void wave(double *to, const Mmd *r1, const Mmd *r2, size_t n, const double an, const double bn)
+static void wave(double *to, const Mmd *r1, const Mmd *r2, size_t n, const double an, const double bn)
 {
-	const auto
-			An = _mm_load_pd1(&an),
-			Bn = _mm_load_pd1(&bn);
+	const Mmd
+			An = {an, an},
+			Bn = {bn, bn};
 
 	while(n--) {
-		const auto x =
-				_mm_add_pd(
-						_mm_mul_pd(An, *r1++),
-						_mm_mul_pd(Bn, *r2++)
-				);
+		const auto
+				l = _mm_mul_pd(An, *r1++),
+				r = _mm_mul_pd(Bn, *r2++),
 
-		*to++ = exp(x[0]);
-		*to++ = exp(x[1]);
+				x = _mm_add_pd(l, r);
+
+		//std::cout << (r1 - 1)[0][0] << " " << (r2 - 1)[0][0] << " " << x[0] << "\n";
+		//std::cout << (r1 - 1)[0][1] << " " << (r2 - 1)[0][1] << " " << x[1] << "\n";
+
+		*to++ = std::exp(x[0]);
+		*to++ = std::exp(x[1]);
 	}
+
+	//std::cout.flush();
 }
 
-void update(Context &c, const double a, const double b)
+static void update(Context &c, const double a, const double b)
 {
 	abs(mmd(c.r1), cmmd3(c.x1), WArrayD::Batches());
 	abs(mmd(c.r2), cmmd3(c.x2), WArrayD::Batches());
@@ -114,7 +116,7 @@ void update(Context &c, const double a, const double b)
 	wave(c.wv2, mmd(c.r1), mmd(c.r2), WArrayD::Batches(), -b, -a);
 }
 
-void prob(Mmd *to, const Mmd *wv1, const Mmd *wv2, size_t n)
+static void prob(Mmd *to, const Mmd *wv1, const Mmd *wv2, size_t n)
 {
 	while(n--) {
 		const auto wv = _mm_add_pd(*wv1++, *wv2++);
@@ -122,7 +124,7 @@ void prob(Mmd *to, const Mmd *wv1, const Mmd *wv2, size_t n)
 	}
 }
 
-int *cmp(int *updates, const Mmd *p, const Mmd *pn, size_t n)
+static int *cmp(int *updates, const Mmd *p, const Mmd *pn, size_t n)
 {
 	int i = 0;
 	while(n--) {
@@ -131,11 +133,12 @@ int *cmp(int *updates, const Mmd *p, const Mmd *pn, size_t n)
 						_mm_div_pd(*pn++, *p++),
 						Mmd{Random::norm(), Random::norm()}
 				);
-		if(result[0])
+
+		if(result[0] != 0)
 			*updates++ = i;
 		++i;
 
-		if(result[1])
+		if(result[1] != 0)
 			*updates++ = i;
 		++i;
 	}
@@ -143,7 +146,7 @@ int *cmp(int *updates, const Mmd *p, const Mmd *pn, size_t n)
 	return updates;
 }
 
-void transfer(Context &to, const Context &from, int *updates, size_t n)
+static void transfer(Context &to, const Context &from, int *updates, size_t n)
 {
 	while(n--) {
 		const auto i = *updates++;
@@ -161,7 +164,7 @@ void transfer(Context &to, const Context &from, int *updates, size_t n)
 	}
 }
 
-void run(Context &c, Context &cn, size_t n, const double a, const double b)
+static void run(Context &c, Context &cn, size_t n, const double a, const double b)
 {
 	while(n--) {
 		step(cn, c);
@@ -170,19 +173,22 @@ void run(Context &c, Context &cn, size_t n, const double a, const double b)
 		prob(mmd(cn.prob), mmd(cn.wv1), mmd(cn.wv2), WArrayD::Batches());
 
 		int updates[Config::WalkerCount];
-		const auto size = static_cast<size_t>(cmp(updates, mmd(c.prob), mmd(cn.prob), WArrayD::Batches()) - updates);
+		const auto size =
+				static_cast<size_t>(
+						cmp(updates, mmd(c.prob), mmd(cn.prob), WArrayD::Batches()) - updates
+				);
 		transfer(c, cn, updates, size);
 	}
 }
 
-void addEnergy(Mmd *energy, const Context &context, const double a, const double b)
+static void addEnergy(Mmd *energy, const Context &context, const double a, const double b)
 {
-	const auto
-			A = _mm_load_pd1(&a),
-			B = _mm_load_pd1(&b),
-			C1 = Mmd{2, 2},
-			C2 = Mmd{-1, -1},
-			C3 = Mmd{-0.5, -0.5};
+	const Mmd
+			A = {a, a},
+			B = {b, b},
+			C1 = {2, 2},
+			C2 = {-1, -1},
+			C3 = {-0.5, -0.5};
 
 	WArrayD rar;
 	Mmd *ra = mmd(&rar);
@@ -194,7 +200,9 @@ void addEnergy(Mmd *energy, const Context &context, const double a, const double
 			*wv1 = mmd(context.wv1),
 			*wv2 = mmd(context.wv2);
 
-	for(size_t n = 0; n < Config::WalkerCount; ++n) {
+	size_t m = 0;
+	size_t n = WArrayD::Batches();
+	while(n--) {
 		const auto V =
 				_mm_add_pd(
 						_mm_div_pd(C1, *r1),
@@ -250,10 +258,27 @@ void addEnergy(Mmd *energy, const Context &context, const double a, const double
 		++ra;
 		++wv1;
 		++wv2;
+
+		std::cout
+				<< context.x1.x[m] << " " << context.x1.y[m] << " " << context.x1.z[m] << " "
+				<< context.x2.x[m] << " " << context.x2.y[m] << " " << context.x2.z[m] << " "
+
+				<< r1[0][0] << " " << r2[0][0] << " " << rar.data[m] << " " << wv[0] << " "
+				<< wv1[0][0] << " " << wv2[0][0] << " "
+				<< V[0] << " " << e1[0] << " " << e2[0] << " " << energy[0][0] << "\n";
+		m += 1;
+		std::cout
+				<< context.x1.x[m] << " " << context.x1.y[m] << " " << context.x1.z[m] << " "
+				<< context.x2.x[m] << " " << context.x2.y[m] << " " << context.x2.z[m] << " "
+
+				<< r1[0][1] << " " << r2[0][1] << " " << rar.data[m] << " " << wv[1] << " "
+				<< wv1[0][1] << " " << wv2[0][1] << " "
+				<< V[1] << " " << e1[1] << " " << e2[1] << " " << energy[0][1] << "\n";
+		m += 1;
 	}
 }
 
-double accumulate(const Mmd *energy, size_t n)
+static double accumulate(const Mmd *energy, size_t n)
 {
 	Mmd sum = {0, 0};
 	while(n--)
@@ -264,8 +289,6 @@ double accumulate(const Mmd *energy, size_t n)
 
 double energyForParameters(const double a, const double b)
 {
-	Out1 = Out2 = 0;
-
 	WArrayD
 			x1x,
 			x1y,
@@ -274,7 +297,7 @@ double energyForParameters(const double a, const double b)
 			x2y,
 			x2z,
 			r1,
-			r2 ,
+			r2,
 			wv1,
 			wv2,
 			probability,
@@ -318,8 +341,14 @@ double energyForParameters(const double a, const double b)
 
 	generate(context);
 	update(context, a, b);
+
 	prob(mmd(context.prob), mmd(context.wv1), mmd(context.wv2), WArrayD::Batches());
 
+	addEnergy(mmd(&energy), context, a, b);
+
+	std::cout.flush();
+
+	return 0.0;
 	run(context, newContext, Config::Therm, a, b);
 
 	for(size_t n = 0; n < Config::PointsCount; ++n) {
@@ -328,7 +357,5 @@ double energyForParameters(const double a, const double b)
 		run(context, newContext, Config::SkipSteps, a, b);
 	}
 
-	std::cout << Config::PointsCount << " " << Config::WalkerCount << "\n";
-
-	return accumulate(mmd(&energy), Config::WalkerCount) / Config::EnergiesCount;
+	return accumulate(mmd(&energy), WArrayD::Batches()) / Config::EnergiesCount;
 }
