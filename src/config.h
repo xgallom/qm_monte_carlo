@@ -18,12 +18,14 @@ namespace Config
 
 			TrialsAlpha = 10,
 			TrialsBeta = 12,
+			Trials = TrialsAlpha * TrialsBeta,
 
 			PointsCount = Steps / SkipSteps,
 
 			EnergiesCount = PointsCount * WalkerCount,
 
-			ThreadCount = 1;
+			ThreadCount = 8,
+			TasksPerThread = Trials / ThreadCount;
 
 	constexpr double
 			dR = 1.,

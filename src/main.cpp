@@ -1,12 +1,14 @@
-#include <fstream>
-#include <iostream>
-#include <mutex>
-#include <thread>
-#include <vector>
 #include "random.h"
 #include "config.h"
-#include "matrix.h"
 #include "energyForParameters.h"
+
+#include <fstream>
+#include <iostream>
+
+#include <mutex>
+#include <thread>
+
+#include <vector>
 
 namespace
 {
@@ -15,67 +17,141 @@ namespace
 		Random::init();
 	}
 
-	void threadHandler(double a, double b, size_t t, std::mutex &mutex, double *energies)
+	void prepare(double *a, double *b)
 	{
-		const auto energy = energyForParameters(a, b);
+		for(size_t n = 0; n < Config::Trials; ++n) {
+			*b++ = Config::Beta1 + Config::dBeta * (n / Config::TrialsAlpha);
+			*a++ = Config::Alpha1 + Config::dAlpha * (n % Config::TrialsAlpha);
+		}
+	}
 
-		std::lock_guard<std::mutex> lock(mutex);
-		energies[t] = energy;
+	void threadHandler(const double *a, const double *b, double *e, size_t t,
+					   std::mutex &mutex, size_t &progress)
+	{
+		double
+				aBuffer[Config::TasksPerThread],
+				bBuffer[Config::TasksPerThread],
+				eBuffer[Config::TasksPerThread];
+
+		mutex.lock();
+		for(size_t n = 0; n < t; ++n) {
+			aBuffer[n] = a[n];
+			bBuffer[n] = b[n];
+		}
+
+		std::cout << "Starting thread-local simulation\n";
+		mutex.unlock();
+
+		auto *eB = eBuffer;
+		const auto *aB = aBuffer, *bB = bBuffer;
+		while(t--)
+			*eB++ = energyForParameters(*aB++, *bB++);
+
+		mutex.lock();
+		std::cout << "Finishing thread-local simulation\n";
+		for(const auto *eW = eBuffer; eW != eB;)
+			*e++ = *eW++;
+
+		progress -= Config::TasksPerThread;
+		mutex.unlock();
+	}
+
+	void runSingle(const double *a, const double *b, double *e, size_t t)
+	{
+		while(t--)
+			*e++ = energyForParameters(*a++, *b++);
+	}
+
+	void spawnThreads(std::vector<std::thread> &threads,
+					  const double *a, const double *b, double *e,
+					  std::mutex &mutex, size_t &progress)
+	{
+		std::cout
+				<< "Spawning " << Config::ThreadCount << " threads, each with " << Config::TasksPerThread
+				<< " out of " << Config::Trials << " tasks\n";
+
+		for(size_t t = 0; t < Config::ThreadCount; ++t) {
+			const auto tasksStart = t * Config::TasksPerThread;
+			const auto tasksEnd = tasksStart + Config::TasksPerThread - 1;
+
+			std::cout << "Thread " << t << " for tasks: " << tasksStart << "-" << tasksEnd << "\n";
+
+			threads.emplace_back(threadHandler,
+								 a + tasksStart,
+								 b + tasksStart,
+								 e + tasksStart,
+								 Config::TasksPerThread,
+								 std::ref(mutex),
+								 std::ref(progress)
+			);
+		}
+	}
+
+	void waitForFinish(std::mutex &mutex, const size_t &progress)
+	{
+		size_t missing = Config::Trials, missingOld = 0;
+
+		while(missing) {
+			mutex.lock();
+			missing = progress;
+			mutex.unlock();
+
+			if(missing != missingOld) {
+				const auto done = Config::Trials - missing;
+				std::cout
+						<< "Progress: " << done << "/" << Config::Trials
+						<< " (" << 100 * done / Config::Trials << " %)\n";
+			}
+
+			missingOld = missing;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+		}
+	}
+
+	void join(std::vector<std::thread> &threads)
+	{
+		for(auto &thread : threads)
+			thread.join();
+	}
+
+	size_t outputData(const double *A, const double *B, const double *E)
+	{
+		size_t min = 0;
+
+		std::ofstream f("out.txt");
+		for(size_t n = 0; n < Config::Trials; ++n) {
+			f << A[n] << " " << B[n] << " " << E[n] << "\n";
+
+			if(E[n] < E[min])
+				min = n;
+		}
+		f.close();
+
+		return min;
 	}
 }
 
 int main()
 {
+	double A[Config::Trials], B[Config::Trials], E[Config::Trials];
+
 	init();
+	prepare(A, B);
 
-	Matrix<Config::TrialsBeta, Config::TrialsAlpha> A, B, E = {};
+	//std::vector<std::thread> threads;
+	//std::mutex mutex;
+	//size_t progress = Config::Trials;
 
-	for(size_t n = 0; n < A.size(); ++n) {
-		const auto c = A(n);
+	runSingle(A, B, E, Config::Trials);
+	//spawnThreads(threads, A, B, E, mutex, progress);
 
-		B[n] = Config::Beta1 + Config::dBeta * c.row;
-		A[n] = Config::Alpha1 + Config::dAlpha * c.col;
-	}
+	//waitForFinish(mutex, progress);
+	//join(threads);
 
-	auto minEnergy = 0., minA = 0., minB = 0.;
+	size_t min = outputData(A, B, E);
 
-	double energies[Config::ThreadCount] = {};
-	std::mutex mutex;
-
-	for(size_t n = 0; n < 1; n += Config::ThreadCount) {
-		std::cerr << "A: " << A[n] << " B: " << B[n] << "\n";
-		std::cerr.flush();
-
-		std::vector<std::thread> threads;
-
-		for(size_t t = 0; t < Config::ThreadCount; ++t)
-			threads.emplace_back(threadHandler, A[n + t], B[n + t], t, std::ref(mutex), energies);
-
-		for(auto &thread : threads)
-			thread.join();
-
-		for(size_t t = 0; t < Config::ThreadCount; ++t) {
-			const auto avgEnergy = energies[t];
-
-			if(avgEnergy < minEnergy) {
-				minEnergy = avgEnergy;
-				minA = A[n + t];
-				minB = B[n + t];
-			}
-
-			std::cerr << avgEnergy << "\n";
-
-			E[n + t] = avgEnergy;
-		}
-	}
-	return 0;
-
-	std::ofstream f("out.txt");
-	for(size_t n = 0; n < A.size(); ++n)
-		f << A[n] << " " << B[n] << " " << E[n] << "\n";
-	f.close();
-
-	std::cerr << "\nMinimums: " << minEnergy << " " << minA << " " << minB << "\n";
+	std::cout << "Minimum E = " << E[min] << " at A = " << A[min] << ", B = " << B[min] << "\n";
 
 	return 0;
 }
