@@ -27,6 +27,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 -pedantic \
 ")
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O4 -mavx -g")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O4 -mavx -ftree-vectorize -g")
 
 add_subdirectory(src)

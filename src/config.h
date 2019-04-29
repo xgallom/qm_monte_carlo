@@ -11,7 +11,7 @@ namespace Config
 {
 	constexpr size_t
 			WalkerCount = 0x100,
-			Steps = 100000,
+			Steps = 1000000,
 			SkipSteps = 500,
 			Therm = 10000,
 			TotalSteps = Steps + Therm,

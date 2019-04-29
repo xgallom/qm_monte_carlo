@@ -26,29 +26,19 @@ namespace
 	void threadHandler(const float *a, const float *b, float *e, size_t t,
 					   std::mutex &mutex, size_t &progress)
 	{
-		float
-				aBuffer[Config::TasksPerThread],
-				bBuffer[Config::TasksPerThread],
-				eBuffer[Config::TasksPerThread];
+		float eBuffer[Config::TasksPerThread];
 
 		Random random;
 
-		mutex.lock();
-		for(size_t n = 0; n < t; ++n) {
-			aBuffer[n] = a[n];
-			bBuffer[n] = b[n];
-		}
-
 		std::cout << "Starting thread-local simulation\n";
-		mutex.unlock();
 
 		auto *eB = eBuffer;
-		const auto *aB = aBuffer, *bB = bBuffer;
 		while(t--)
-			*eB++ = energyForParameters(*aB++, *bB++, random);
+			*eB++ = energyForParameters(*a++, *b++, random);
+
+		std::cout << "Finishing thread-local simulation\n";
 
 		mutex.lock();
-		std::cout << "Finishing thread-local simulation\n";
 		for(const auto *eW = eBuffer; eW != eB;)
 			*e++ = *eW++;
 
