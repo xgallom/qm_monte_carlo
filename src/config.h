@@ -11,10 +11,9 @@ namespace Config
 {
 	constexpr size_t
 			WalkerCount = 0x100,
-			Steps = 1000000,
+			Steps = 100000,
 			SkipSteps = 500,
 			Therm = 10000,
-			TotalSteps = Steps + Therm,
 
 			TrialsAlpha = 10,
 			TrialsBeta = 12,
@@ -24,7 +23,7 @@ namespace Config
 
 			EnergiesCount = PointsCount * WalkerCount,
 
-			ThreadCount = 8,
+			ThreadCount = 4,
 			TasksPerThread = Trials / ThreadCount;
 
 	constexpr float

@@ -5,7 +5,8 @@
 #ifndef QM_MONTE_CARLO_CONTEXT_H
 #define QM_MONTE_CARLO_CONTEXT_H
 
-#include <immintrin.h>
+#include "config.h"
+#include "avx_mathfun.h"
 
 using Mm = __m256;
 
@@ -18,7 +19,9 @@ static const Mm *mm(const float *x)
 static constexpr size_t
 		Align = 32,
 		BatchSize = 256,
-		PerBatch = BatchSize / (8 * sizeof(float));
+		PerBatch = BatchSize / (8 * sizeof(float)),
+		Batches = Config::WalkerCount / PerBatch;
+
 
 struct CMm3 {
 	const Mm
@@ -58,6 +61,7 @@ struct D3 {
 
 	operator CMm3() const
 	{ return {mm(x), mm(y), mm(z)}; }
+
 	operator Mm3() const
 	{ return {mm(x), mm(y), mm(z)}; }
 };
