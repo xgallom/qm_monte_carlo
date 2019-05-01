@@ -58,7 +58,7 @@ float energyForParameters(const float a, const float b, Random &random)
 
 	// Simulate
 	for(size_t n = 0; n < Config::PointsCount; ++n) {
-		computeLocalEnergies(e, context, a, b);
+		computeLocalEnergies(e, context, Batches, a, b);
 
 		// Skip
 		simulateSteps(context, newContext, Config::SkipSteps, a, b, random);

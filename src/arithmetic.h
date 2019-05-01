@@ -8,7 +8,9 @@
 static float sqr(const float x)
 { return x * x; }
 
-static Mm abs(const Mm x, const Mm y, const Mm z)
+#include <iostream>
+
+static Mm abs(const Mm &x, const Mm &y, const Mm &z)
 {
 	return _mm256_sqrt_ps(
 			_mm256_add_ps(

@@ -62,7 +62,7 @@ struct D3 {
 	operator CMm3() const
 	{ return {mm(x), mm(y), mm(z)}; }
 
-	operator Mm3() const
+	operator Mm3()
 	{ return {mm(x), mm(y), mm(z)}; }
 };
 

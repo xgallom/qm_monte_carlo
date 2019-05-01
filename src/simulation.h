@@ -26,7 +26,7 @@ static size_t *compareProbabilities(size_t *updatesBuffer, const Mm *p, const Mm
 				compare = _mm256_cmp_ps(_mm256_div_ps(*pn++, *p++), norm, 13 /* GE */);
 
 		for(size_t m = 0; m < PerBatch; ++m) {
-			if(static_cast<uint32_t>(compare[m]))
+			if(compare[m] != 0)
 				*updatesBuffer++ = i;
 
 			++i;

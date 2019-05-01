@@ -26,7 +26,8 @@ static void outputData(const float *A, const float *B, const float *E)
 	}
 	f.close();
 
-	std::cout << "Minimum E = " << E[min] << " at A = " << A[min] << ", B = " << B[min] << "\n";
+	std::cout << "Minimum E = " << std::scientific << E[min] << std::defaultfloat
+			  << " at A = " << A[min] << ", B = " << B[min] << "\n";
 }
 
 int main(int argc, char *[])
@@ -34,7 +35,9 @@ int main(int argc, char *[])
 	float A[Config::Trials], B[Config::Trials], E[Config::Trials];
 	prepare(A, B);
 
-	if(argc > 1)
+	if(argc > 2)
+		runSingle(&A[Config::Trials - 1], &B[Config::Trials - 1], E, 1);
+	else if(argc > 1)
 		runSingle(A, B, E, Config::Trials);
 	else
 		runParallel(A, B, E);

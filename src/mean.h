@@ -6,6 +6,7 @@
 #define QM_MONTE_CARLO_MEAN_H
 
 #include "context.h"
+#include <iostream>
 
 static float accumulate(const Mm *e, size_t n)
 {
