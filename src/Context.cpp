@@ -67,7 +67,7 @@ Context generateContext(
 			oldContext.electronConfiguration,
 			generator,
 			distribution,
-			2. * oldContext.protonConfiguration.p2.z
+			S
 	);
 	ProtonConfiguration protonConfiguration = generateConfiguration(S / 2.);
 

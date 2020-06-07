@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <random>
 
 int main()
@@ -20,22 +21,27 @@ int main()
 	std::uniform_real_distribution<double>
 			normalDist(0, 1.0),
 			spaceDist(-2 * BohrRadius, 2 * BohrRadius),
-			deltaDist(-0.05 * BohrRadius, 0.05 * BohrRadius);
+			deltaDist(-0.05, 0.05);
 
 	std::fstream
-			file("out.txt", std::ios::out),
-			debug("debug.txt", std::ios::out);
+			file("out.txt", std::ios::out);//,
+//			debug("debug.txt", std::ios::out);
 
-	if(!file.is_open() || !debug.is_open())
+	if(!file.is_open())// || !debug.is_open())
 		return 1;
 
 
-	for(double S = 0.3 * BohrRadius; S < 6.3 * BohrRadius; S += 0.05 * BohrRadius) {
+	size_t n = 0;
+	for(double S = 0.3 * BohrRadius; S < 6.3 * BohrRadius; S += 0.05 * BohrRadius, ++n) {
 
 		Parameters parameters = generateParameters(S);
 
-		debug << "Starting simulation\n";
-		debug << "parameters: " << parameters << "\n\n";
+		std::stringstream ss;
+		ss << "debug_" << n << ".txt";
+		std::fstream debug(ss.str(), std::ios::out);
+
+//		debug << "Starting simulation\n";
+//		debug << "parameters: " << parameters << "\n\n";
 
 		double averageEnergy = 0.;
 
@@ -49,7 +55,7 @@ int main()
 			Context minimumContext = {};
 
 
-			for(size_t step = 0; step < (1u << 16u); ++step) {
+			for(size_t step = 0; step < (1u << 13u); ++step) {
 				Context newContext = generateContext(context, generator, deltaDist, parameters, S);
 
 				if(/*newContext.waveContext.waveSquared < 1.0 &&*/
@@ -71,8 +77,8 @@ int main()
 //					debug << "context: " << context << "\n";
 //					debug << "energy: " << energy << " J = " << (energy / ElectronCharge) << " eV\n";
 //					debug << "totalEnergy: " << totalEnergy << " J = " << (totalEnergy / ElectronCharge) << " eV\n\n";
-/*
-				file
+
+				debug
 						<< (context.electronConfiguration.e1.x / BohrRadius) << " "
 						<< (context.electronConfiguration.e1.y / BohrRadius) << " "
 						<< (context.electronConfiguration.e1.z / BohrRadius) << " "
@@ -89,7 +95,7 @@ int main()
 						<< context.waveContext.waveSquared << " "
 						<< ((Q2 / ProtonOffest + energy) / ElectronCharge) << " "
 
-						<< context.distanceContext.electronDistance << "\n";*/
+						<< context.distanceContext.electronDistance << "\n";
 
 					++count;
 				}
