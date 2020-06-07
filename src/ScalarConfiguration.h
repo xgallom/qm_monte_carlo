@@ -48,8 +48,8 @@ namespace format {
 
 		inline static void PrintMembers(std::ostream &out, const Object &object, const std::string &offset)
 		{
-			PrintMember(out, object.e1, "e1", offset);
-			PrintMember(out, object.e2, "e2", offset);
+			PrintMember(e1);
+			PrintMember(e2);
 		}
 	};
 
@@ -59,9 +59,9 @@ namespace format {
 
 		inline static void PrintMembers(std::ostream &out, const Object &object, const std::string &offset)
 		{
-			PrintMember(out, object.e1, "e1", offset);
-			PrintMember(out, object.e2, "e2", offset);
-			PrintMember(out, object.f, "f", offset);
+			PrintMember(e1);
+			PrintMember(e2);
+			PrintMember(f);
 		}
 	};
 
@@ -71,8 +71,8 @@ namespace format {
 
 		inline static void PrintMembers(std::ostream &out, const Object &object, const std::string &offset)
 		{
-			PrintMember(out, object.p1, "p1", offset);
-			PrintMember(out, object.p2, "p2", offset);
+			PrintMember(p1);
+			PrintMember(p2);
 		}
 	};
 }

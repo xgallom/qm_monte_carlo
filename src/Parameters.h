@@ -33,9 +33,9 @@ namespace format {
 
 		inline static void PrintMembers(std::ostream &out, const Object &object, const std::string &offset)
 		{
-			PrintMember(out, object.a, "a", offset);
-			PrintMember(out, object.alpha, "alpha", offset);
-			PrintMember(out, object.beta, "beta", offset);
+			PrintMember(a);
+			PrintMember(alpha);
+			PrintMember(beta);
 		}
 	};
 }

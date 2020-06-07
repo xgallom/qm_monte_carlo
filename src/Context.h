@@ -54,8 +54,8 @@ namespace format {
 
 		inline static void PrintMembers(std::ostream &out, const Object &object, const std::string &offset)
 		{
-			PrintMember(out, object.distances, "distances", offset);
-			PrintMember(out, object.electronDistance, "electronDistance", offset);
+			PrintMember(distances);
+			PrintMember(electronDistance);
 		}
 	};
 
@@ -65,10 +65,10 @@ namespace format {
 
 		inline static void PrintMembers(std::ostream &out, const Object &object, const std::string &offset)
 		{
-			PrintMember(out, object.electronWaves, "electronWaves", offset);
-			PrintMember(out, object.electronProtonWaves, "electronProtonWaves", offset);
-			PrintMember(out, object.waveSquared, "waveSquared", offset);
-			PrintMember(out, object.wave, "wave", offset);
+			PrintMember(electronWaves);
+			PrintMember(electronProtonWaves);
+			PrintMember(waveSquared);
+			PrintMember(wave);
 		}
 	};
 
@@ -78,10 +78,10 @@ namespace format {
 
 		inline static void PrintMembers(std::ostream &out, const Object &object, const std::string &offset)
 		{
-			PrintMember(out, object.electronConfiguration, "electronConfiguration", offset);
-			PrintMember(out, object.protonConfiguration, "protonConfiguration", offset);
-			PrintMember(out, object.distanceContext, "distanceContext", offset);
-			PrintMember(out, object.waveContext, "waveContext", offset);
+			PrintMember(electronConfiguration);
+			PrintMember(protonConfiguration);
+			PrintMember(distanceContext);
+			PrintMember(waveContext);
 		}
 	};
 }

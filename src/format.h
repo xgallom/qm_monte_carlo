@@ -13,7 +13,7 @@ namespace format {
 	static constexpr size_t OffsetDelta = 4;
 
 	template<typename Member>
-	inline void PrintMember(std::ostream &out, const Member &member, const char *name, const std::string &offset)
+	inline void PrintMemberImpl(std::ostream &out, const Member &member, const char *name, const std::string &offset)
 	{
 		out << offset << name << ": " << member << ",\n";
 	}
@@ -34,5 +34,7 @@ namespace format {
 		return out << offset << "}";
 	}
 }
+
+#define PrintMember(name) PrintMemberImpl(out, object.name, #name, offset)
 
 #endif //QM_MONTE_CARLO_SRC_FORMAT_H
