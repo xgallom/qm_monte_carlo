@@ -20,7 +20,7 @@ Configuration generateConfiguration(
 					.e1 = {.data = {distribution(generator), distribution(generator),
 					 distribution(generator) - protonDistance / 2.}},
 					.e2 = {.data = {distribution(generator), distribution(generator),
-					 distribution(generator) + protonDistance / 2,}}
+					 distribution(generator) + protonDistance / 2.}}
 			}};
 }
 

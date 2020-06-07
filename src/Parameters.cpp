@@ -12,7 +12,7 @@
 
 static double generateParameterA(double protonDistance)
 {
-	double a = 0., oldA = std::numeric_limits<double>::max();
+	double a = BohrRadius, oldA = std::numeric_limits<double>::max();
 
 	while(std::fabs(a - oldA) >= std::numeric_limits<double>::epsilon()) {
 		oldA = a;
@@ -22,7 +22,6 @@ static double generateParameterA(double protonDistance)
 				positiveExponential = exp(protonDistance / a),
 				parentheses = 1. + exponential,
 				positiveParentheses = 1. + positiveExponential,
-				bohrParentheses = BohrRadius / parentheses,
 				derivativeParentheses = a * positiveParentheses;
 
 		a = a
