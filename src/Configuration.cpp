@@ -10,10 +10,16 @@ Configuration generateConfiguration(
 		double protonDistance)
 {
 	return {{
-					.e1 = {.data = {distribution(generator), distribution(generator),
-					 distribution(generator) - protonDistance / 2.}},
-					.e2 = {.data = {distribution(generator), distribution(generator),
-					 distribution(generator) + protonDistance / 2.}}
+					.e1 = {
+							.data = {
+									distribution(generator), distribution(generator),
+									distribution(generator) - protonDistance / 2.
+							}},
+					.e2 = {
+							.data = {
+									distribution(generator), distribution(generator),
+									distribution(generator) + protonDistance / 2.
+							}}
 			}};
 }
 
@@ -27,11 +33,11 @@ Configuration generateConfiguration(
 
 	for(size_t e = 0; e < Proton::Count; ++e) {
 		result.data[e][Dimension::X] = oldConfiguration.data[e][Dimension::X] +
-				protonDistance * distribution(generator);
+									   protonDistance * distribution(generator);
 		result.data[e][Dimension::Y] = oldConfiguration.data[e][Dimension::Y] +
-				protonDistance * distribution(generator);
+									   protonDistance * distribution(generator);
 		result.data[e][Dimension::Z] = oldConfiguration.data[e][Dimension::Z] +
-				protonDistance * distribution(generator);
+									   protonDistance * distribution(generator);
 	}
 
 	return result;

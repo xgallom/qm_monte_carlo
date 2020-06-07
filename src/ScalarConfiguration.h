@@ -41,8 +41,7 @@ ExtendedScalarConfiguration waveFunction(
 		const double &electronDistance, const double &alpha, const double &beta
 );
 
-namespace format
-{
+namespace format {
 	struct ScalarConfiguration {
 		using Object = ::ScalarConfiguration;
 		static constexpr auto Name = "ScalarConfiguration";

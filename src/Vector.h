@@ -24,8 +24,7 @@ union Vector {
 	double data[Dimension::Count];
 };
 
-namespace format
-{
+namespace format {
 	struct Vector {
 		using Object = ::Vector;
 		static constexpr auto Name = "Vector";

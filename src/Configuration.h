@@ -65,8 +65,7 @@ Configuration generateConfiguration(
 );
 ProtonConfiguration generateConfiguration(double protonOffset);
 
-namespace format
-{
+namespace format {
 	struct Configuration {
 		using Object = ::Configuration;
 		static constexpr auto Name = "Configuration";

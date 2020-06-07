@@ -47,8 +47,7 @@ Context generateContext(
 		double S
 );
 
-namespace format
-{
+namespace format {
 	struct DistanceContext {
 		using Object = ::DistanceContext;
 		static constexpr auto Name = "DistanceContext";

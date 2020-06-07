@@ -4,7 +4,6 @@
 
 #include "format.h"
 
-namespace format
-{
+namespace format {
 	size_t currentOffset = 0;
 }

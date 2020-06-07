@@ -26,8 +26,7 @@ union Parameters {
 
 Parameters generateParameters(double protonDistance);
 
-namespace format
-{
+namespace format {
 	struct Parameters {
 		using Object = ::Parameters;
 		static constexpr auto Name = "Parameters";
