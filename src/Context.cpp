@@ -22,6 +22,9 @@ WaveContext generateContext(
 {
 	WaveContext result = {
 			.electronProtonWaves = waveFunction(distanceContext.distances, parameters.a),
+			.electronWaves = {},
+			.wave = {},
+			.waveSquared = {}
 	};
 
 	result.electronWaves = waveFunction(

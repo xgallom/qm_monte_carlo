@@ -47,7 +47,7 @@ static inline double simulateTry(
 		if(newContext.waveContext.waveSquared / context.waveContext.waveSquared >= normalDist(generator))
 			context = newContext;
 
-		if(!(step & SkipsMask)) {
+		if(__builtin_expect(!(step & SkipsMask), false)) {
 			double energy = localEnergy(context, parameters);
 
 			totalEnergy += energy;
